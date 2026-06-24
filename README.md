@@ -147,6 +147,42 @@ wave = wm.Waveform(source=src, ops=[op])     # advanced: build a pipeline direct
 Custom binary formats: subclass `wm.Source` (implement `__len__` and
 `read(start, stop)`) and pass it as `Waveform(source=...)`.
 
+## Digital-phosphor rendering
+
+`plt.plot` aliases and crawls on captures with 10^8+ samples. `wm.render`
+instead draws them the way a digital-phosphor oscilloscope does: it rasterizes
+the line segments between consecutive samples (Bresenham) into a 2-D
+accumulation histogram, so dense regions glow. It runs on **CUDA or CPU**
+(multi-core), and **streams** the whole waveform in bounded memory.
+
+```python
+import matplotlib.pyplot as plt
+import wave_measure as wm
+
+wave = wm.read_raw("capture.bin", dtype="int16", sample_rate=10e6)
+
+img = wm.render(wave, width=1000, height=500)   # RGBA uint8 image
+plt.imshow(img)                                  # display
+plt.imsave("scope.png", img)                     # ...or save
+# or save directly:
+wm.render(wave, width=1000, height=500, path="scope.png")
+```
+
+`render` always draws the **whole** waveform you give it — to render a slice,
+pass one: `wm.render(wave.get_from_to(a, b))`. Key options: `cmap` (any
+matplotlib colormap, default `"inferno"`), `scale` (`"sqrt"`/`"log"`/`"linear"`
+intensity compression), `x_range`/`y_range`, `backend` (`"cuda"`/`"cpu"`/auto),
+and `workers`. The backend defaults to the detected accelerator; an unusable
+CUDA request falls back to CPU with a warning.
+
+For axes in data units, use the lower-level `wm.dpo_histogram`, which returns the
+raw `(counts, extent)`:
+
+```python
+hist, extent = wm.dpo_histogram(wave, width=1000, height=500)
+plt.imshow(hist ** 0.5, origin="lower", aspect="auto", extent=extent)
+```
+
 ## Quick start
 
 ```python

@@ -12,6 +12,7 @@ import os
 from .accelerator import AcceleratorInfo, detect_accelerator, get_accelerator
 from .analysis import detrend, dominant_frequency, moving_average, spectrum
 from .categories import amplitude, filter, math
+from .dpo import dpo_histogram, render
 from .io import from_array, read_csv, read_raw, write_csv
 from .reductions import Histogram, Peaks, Stats
 from .sources import ArraySource, RawBinaryReader, Source
@@ -29,7 +30,7 @@ from .measure import (
     vpp,
     vrms,
 )
-from .render import plot, plot_spectrum
+from .plotting import plot, plot_spectrum
 from .waveform import Waveform
 
 __version__ = "0.1.0"
@@ -84,6 +85,8 @@ __all__ = [
     "moving_average",
     "detrend",
     # render
+    "render",
+    "dpo_histogram",
     "plot",
     "plot_spectrum",
 ]
