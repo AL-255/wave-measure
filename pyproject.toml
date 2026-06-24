@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wave-measure"
+version = "0.1.0"
+description = "A toolbox for manipulating, measuring, rendering, and analyzing oscilloscope-captured waveform data."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "AL-255" }]
+keywords = ["oscilloscope", "waveform", "signal-processing", "measurement", "dsp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy>=1.21",
+    "numba>=0.59",
+]
+
+[project.optional-dependencies]
+render = ["matplotlib>=3.5"]
+analysis = ["scipy>=1.7"]
+all = ["matplotlib>=3.5", "scipy>=1.7"]
+dev = ["pytest>=7.0", "matplotlib>=3.5", "scipy>=1.7"]
+
+[project.urls]
+Homepage = "https://github.com/AL-255/wave-measure"
+Repository = "https://github.com/AL-255/wave-measure"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wave_measure"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
