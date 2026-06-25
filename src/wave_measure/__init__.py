@@ -14,7 +14,7 @@ from .analysis import detrend, dominant_frequency, moving_average, spectrum
 from .categories import amplitude, filter, math
 from .dpo import dpo_histogram, render
 from .io import from_array, read_csv, read_raw, write_csv
-from .reductions import Histogram, Peaks, Stats
+from .reductions import Histogram, Levels, Peaks, Stats
 from .sources import ArraySource, RawBinaryReader, Source
 from .measure import (
     crossings,
@@ -57,6 +57,7 @@ __all__ = [
     "Histogram",
     "Peaks",
     "Stats",
+    "Levels",
     # operator categories (catalog; chain on a waveform: wave.filter.iir(...))
     "filter",
     "amplitude",

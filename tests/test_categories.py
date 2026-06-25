@@ -109,6 +109,42 @@ def test_amplitude_length_preserving_ops(noisy):
     np.testing.assert_allclose(out.to_array(allow_large=True), ref, atol=1e-9)
 
 
+def test_top_bottom_levels(tmp_path):
+    # A two-level (digital) signal: lows near 0.0, highs near 3.3, plus noise
+    # and transition edges between them.
+    fs = 10e6
+    rng = np.random.default_rng(7)
+    bits = rng.integers(0, 2, 4000)
+    samples_per_bit = 50
+    level = np.repeat(np.where(bits == 1, 3.3, 0.0), samples_per_bit)
+    v = level + rng.normal(0, 0.05, level.size)
+    path = tmp_path / "logic.f64"
+    v.astype(np.float64).tofile(path)
+    wave = wm.read_raw(path, dtype="float64", sample_rate=fs)
+
+    lv = wave.amplitude.levels(bins=256)
+    assert isinstance(lv, wm.Levels)
+    assert lv.bottom == pytest.approx(0.0, abs=0.1)
+    assert lv.top == pytest.approx(3.3, abs=0.1)
+    assert lv.amplitude == pytest.approx(3.3, abs=0.15)
+    # top()/bottom() delegate to the same fit.
+    assert wave.amplitude.top() == pytest.approx(lv.top)
+    assert wave.amplitude.bottom() == pytest.approx(lv.bottom)
+    # ordering invariant
+    assert wave.amplitude.top() > wave.amplitude.bottom()
+    # module-level parity
+    assert wm.amplitude.top(wave) == pytest.approx(lv.top)
+
+
+def test_top_bottom_dc_signal():
+    # A flat (DC) signal has no two levels: both modes collapse to one another,
+    # at the occupied bin (within histogram resolution of the value).
+    wave = wm.from_array(np.full(2000, 1.5), sample_rate=1.0)
+    lv = wave.amplitude.levels(value_range=(1.0, 2.0), bins=256)
+    assert lv.top == pytest.approx(lv.bottom)
+    assert lv.top == pytest.approx(1.5, abs=0.01)
+
+
 # -- math category ----------------------------------------------------------
 
 

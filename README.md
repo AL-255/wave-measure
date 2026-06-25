@@ -115,7 +115,7 @@ waveform:
 | Category | Length-preserving (return a waveform) | Terminal reductions (return a result) |
 |---|---|---|
 | `wave.filter` | `fir`, `iir`, `lowpass`, `highpass`, `bandpass`, `moving_average`, `median` | — |
-| `wave.amplitude` | `abs`, `clip`, `gain`, `offset` | `histogram`, `min`, `max`, `mean`, `rms`, `peak_to_peak`, `stats`, `peaks` |
+| `wave.amplitude` | `abs`, `clip`, `gain`, `offset` | `histogram`, `min`, `max`, `mean`, `rms`, `peak_to_peak`, `stats`, `peaks`, `top`, `bottom`, `levels` |
 | `wave.math` | `diff`, `square`, `sqrt`, `log` | — |
 
 ```python
@@ -126,6 +126,11 @@ spikes = wave_before.amplitude.abs().filter.median(7).math.diff()
 h     = wave_before.amplitude.histogram(bins=256)     # Histogram
 stats = wave_before.amplitude.stats()                 # min/max/mean/rms/p2p
 pk    = wave_before.amplitude.abs().filter.lowpass(20_000).amplitude.peaks(height=2.0)
+
+# logic levels via a two-Gaussian fit of the amplitude histogram
+top    = wave_before.amplitude.top()       # mean of the upper mode
+bottom = wave_before.amplitude.bottom()    # mean of the lower mode
+levels = wave_before.amplitude.levels()    # both, plus sigmas/weights
 ```
 
 **Two kinds of operator.** *Length-preserving* ops return a new lazy `Waveform`

@@ -36,7 +36,12 @@ from .operators import (
     SqrtOp,
     moving_average_op,
 )
-from .reductions import stream_histogram, stream_peaks, stream_stats
+from .reductions import (
+    stream_histogram,
+    stream_levels,
+    stream_peaks,
+    stream_stats,
+)
 
 __all__ = ["FilterCategory", "AmplitudeCategory", "MathCategory", "filter", "amplitude", "math"]
 
@@ -146,6 +151,18 @@ class AmplitudeCategory(_Bound):
     def peaks(self, *, height=None, distance=1, block=1 << 20):
         return stream_peaks(self._wave, height=height, distance=distance, block=block)
 
+    def levels(self, bins=256, value_range=None, *, block=1 << 20):
+        """Fit two Gaussians to the amplitude histogram; return both logic levels."""
+        return stream_levels(self._wave, bins=bins, value_range=value_range, block=block)
+
+    def top(self, bins=256, value_range=None, *, block=1 << 20):
+        """High logic level: mean of the upper Gaussian of the amplitude histogram."""
+        return self.levels(bins=bins, value_range=value_range, block=block).top
+
+    def bottom(self, bins=256, value_range=None, *, block=1 << 20):
+        """Low logic level: mean of the lower Gaussian of the amplitude histogram."""
+        return self.levels(bins=bins, value_range=value_range, block=block).bottom
+
 
 # -- module-level catalog (standalone operator factories) -------------------
 # Primary usage is the chained accessors above; these mirror the categories for
@@ -177,6 +194,9 @@ amplitude = SimpleNamespace(
     rms=lambda wave, **kw: wave.amplitude.rms(**kw),
     peak_to_peak=lambda wave, **kw: wave.amplitude.peak_to_peak(**kw),
     peaks=lambda wave, **kw: wave.amplitude.peaks(**kw),
+    levels=lambda wave, **kw: wave.amplitude.levels(**kw),
+    top=lambda wave, **kw: wave.amplitude.top(**kw),
+    bottom=lambda wave, **kw: wave.amplitude.bottom(**kw),
 )
 
 math = SimpleNamespace(

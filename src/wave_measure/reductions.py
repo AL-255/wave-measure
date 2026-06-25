@@ -16,9 +16,11 @@ __all__ = [
     "Histogram",
     "Peaks",
     "Stats",
+    "Levels",
     "stream_histogram",
     "stream_peaks",
     "stream_stats",
+    "stream_levels",
 ]
 
 
@@ -194,3 +196,111 @@ def _local_maxima(v: np.ndarray, height: Optional[float]) -> np.ndarray:
     if height is not None:
         is_peak &= middle >= height
     return np.nonzero(is_peak)[0] + 1
+
+
+@dataclass
+class Levels:
+    """Logic levels from a two-Gaussian fit of the amplitude histogram.
+
+    The two fitted components correspond to the signal's low and high dwell
+    levels; ``bottom`` and ``top`` are their means.
+    """
+
+    bottom: float
+    top: float
+    means: Tuple[float, float]
+    sigmas: Tuple[float, float]
+    weights: Tuple[float, float]
+
+    @property
+    def amplitude(self) -> float:
+        return self.top - self.bottom
+
+    def __repr__(self) -> str:
+        return f"Levels(bottom={self.bottom:g}, top={self.top:g})"
+
+
+def _gaussian_pdf(x: np.ndarray, mu: float, var: float) -> np.ndarray:
+    return np.exp(-0.5 * (x - mu) ** 2 / var) / np.sqrt(2.0 * np.pi * var)
+
+
+def _fit_two_gaussians(centers, counts, *, max_iter: int = 300, tol: float = 1e-8):
+    """Fit a 2-component Gaussian mixture to a histogram via weighted EM.
+
+    Treats each bin center as a data point weighted by its count. Returns
+    ``(means, sigmas, weights)`` sorted so index 0 is the lower (bottom) mode.
+    """
+    c = np.asarray(centers, dtype=float)
+    w = np.asarray(counts, dtype=float)
+    total = w.sum()
+    if total <= 0 or np.count_nonzero(w) < 2:
+        m = float(c[np.argmax(w)]) if w.size and total > 0 else float("nan")
+        return np.array([m, m]), np.array([0.0, 0.0]), np.array([0.5, 0.5])
+
+    spacing = float(c[1] - c[0]) if c.size > 1 else 1.0
+    span = float(c[-1] - c[0]) or 1.0
+    var_floor = max(spacing * spacing, (span * 1e-6) ** 2)
+
+    # Initialize the two means from the centroids either side of the mean level.
+    grand_mean = np.average(c, weights=w)
+
+    def _centroid(mask):
+        ww = w * mask
+        s = ww.sum()
+        return float(np.average(c, weights=ww)) if s > 0 else grand_mean
+
+    mu = np.array([_centroid(c <= grand_mean), _centroid(c > grand_mean)])
+    if mu[0] == mu[1]:  # unimodal: nudge apart so EM can separate
+        mu = np.array([grand_mean - spacing, grand_mean + spacing])
+    var = np.full(2, max(np.average((c - grand_mean) ** 2, weights=w), var_floor))
+    pi = np.array([0.5, 0.5])
+
+    prev_ll = -np.inf
+    for _ in range(max_iter):
+        g0 = pi[0] * _gaussian_pdf(c, mu[0], var[0])
+        g1 = pi[1] * _gaussian_pdf(c, mu[1], var[1])
+        denom = g0 + g1
+        denom = np.where(denom <= 0, 1e-300, denom)
+        r0, r1 = g0 / denom, g1 / denom
+
+        n0 = float((w * r0).sum())
+        n1 = float((w * r1).sum())
+        if n0 <= 0 or n1 <= 0:
+            break
+        mu = np.array([(w * r0 * c).sum() / n0, (w * r1 * c).sum() / n1])
+        var = np.array(
+            [
+                (w * r0 * (c - mu[0]) ** 2).sum() / n0,
+                (w * r1 * (c - mu[1]) ** 2).sum() / n1,
+            ]
+        )
+        var = np.maximum(var, var_floor)
+        pi = np.array([n0, n1]) / total
+
+        ll = float((w * np.log(denom)).sum())
+        if abs(ll - prev_ll) <= tol * (abs(ll) + 1.0):
+            break
+        prev_ll = ll
+
+    order = np.argsort(mu)
+    return mu[order], np.sqrt(var[order]), pi[order]
+
+
+def stream_levels(
+    waveform,
+    bins: int = 256,
+    value_range: Optional[Tuple[float, float]] = None,
+    *,
+    block: int = 1 << 20,
+) -> Levels:
+    """Estimate bottom/top logic levels by fitting two Gaussians to the
+    streamed amplitude histogram."""
+    hist = stream_histogram(waveform, bins=bins, value_range=value_range, block=block)
+    means, sigmas, weights = _fit_two_gaussians(hist.centers, hist.counts)
+    return Levels(
+        bottom=float(means[0]),
+        top=float(means[1]),
+        means=(float(means[0]), float(means[1])),
+        sigmas=(float(sigmas[0]), float(sigmas[1])),
+        weights=(float(weights[0]), float(weights[1])),
+    )
