@@ -182,13 +182,14 @@ RGBA), `scale` (`"sqrt"`/`"log"`/`"linear"` intensity compression),
 backend defaults to the detected accelerator; an unusable CUDA request falls
 back to CPU with a warning.
 
-For axes in data units, use the lower-level `wm.dpo_histogram`, which returns the
-raw `(counts, extent)`:
+For data-unit axes (the same time/amplitude axes `plt.plot` produces), use
+`wm.plot_dpo`, which draws the render onto a matplotlib `Axes`:
 
 ```python
-hist, extent = wm.dpo_histogram(wave, width=1000, height=500)
-plt.imshow(hist ** 0.5, origin="lower", aspect="auto", extent=extent)
+ax = wm.plot_dpo(wave, cmap="inferno")   # x = time, y = amplitude
 ```
+
+Or drop to `wm.dpo_histogram`, which returns the raw `(counts, extent)`.
 
 ## Quick start
 

@@ -30,7 +30,7 @@ from .measure import (
     vpp,
     vrms,
 )
-from .plotting import plot, plot_spectrum
+from .plotting import plot, plot_dpo, plot_spectrum
 from .waveform import Waveform
 
 __version__ = "0.1.0"
@@ -90,4 +90,5 @@ __all__ = [
     "dpo_histogram",
     "plot",
     "plot_spectrum",
+    "plot_dpo",
 ]

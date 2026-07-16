@@ -1,7 +1,10 @@
 """Tests for the digital-phosphor renderer."""
 
+import matplotlib
 import numpy as np
 import pytest
+
+matplotlib.use("Agg")  # headless plotting for plot_dpo tests
 
 import wave_measure as wm
 
@@ -111,6 +114,31 @@ def test_cuda_backend_falls_back_when_unavailable(signal):
     with pytest.warns(RuntimeWarning):
         hist, _ = wm.dpo_histogram(signal, width=64, height=64, backend="cuda")
     assert hist.sum() > 0
+
+
+def test_plot_dpo_has_time_amplitude_axes(signal):
+    import matplotlib.pyplot as plt
+
+    ax = wm.plot_dpo(signal, width=100, height=80, cmap="inferno")
+    assert ax.images, "an imshow image should be drawn"
+    assert ax.get_xlabel() == "Time (s)"
+    assert ax.get_ylabel() == "Amplitude"
+    # The image extent spans the data range (time base starts at 0).
+    x0, x1, y0, y1 = ax.images[0].get_extent()
+    assert x0 == pytest.approx(0.0)
+    assert x1 > x0 and y1 > y0
+    plt.close("all")
+
+
+def test_plot_dpo_xy_mode_labels():
+    import matplotlib.pyplot as plt
+
+    n = 2000
+    y = wm.from_array(np.linspace(0, 1, n), sample_rate=1.0)
+    ax = wm.plot_dpo(y, x=np.linspace(-1, 1, n), width=64, height=64, ylabel="Y")
+    assert ax.get_xlabel() == "X"
+    assert ax.get_ylabel() == "Y"
+    plt.close("all")
 
 
 def test_too_short_raises():

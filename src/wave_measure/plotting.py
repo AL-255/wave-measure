@@ -11,7 +11,7 @@ from typing import Any, Optional
 from .analysis import spectrum
 from .waveform import Waveform
 
-__all__ = ["plot", "plot_spectrum"]
+__all__ = ["plot", "plot_spectrum", "plot_dpo"]
 
 
 def _require_matplotlib():
@@ -65,4 +65,43 @@ def plot_spectrum(
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Magnitude")
     ax.grid(True, alpha=0.3)
+    return ax
+
+
+def plot_dpo(
+    waveform: Waveform,
+    *,
+    ax: Optional[Any] = None,
+    cmap: str = "inferno",
+    scale: str = "sqrt",
+    xlabel: Optional[str] = None,
+    ylabel: str = "Amplitude",
+    **kwargs: Any,
+):
+    """Draw a digital-phosphor render of ``waveform`` on a matplotlib ``Axes``.
+
+    Unlike :func:`~wave_measure.render`, which returns a bare image array, this
+    displays the render with **data-unit axes** — the same time/amplitude axes
+    :func:`plot` (and ``plt.plot``) would produce — by mapping the accumulation
+    histogram through ``imshow`` with the correct extent. Returns the ``Axes``.
+
+    Extra keyword arguments (``x``, ``width``, ``height``, ``x_range``,
+    ``y_range``, ``backend``, ``block``, ``workers``) are forwarded to
+    :func:`~wave_measure.dpo_histogram`.
+    """
+    from .dpo import _intensity, dpo_histogram
+
+    plt = _require_matplotlib()
+    if ax is None:
+        _, ax = plt.subplots()
+    hist, extent = dpo_histogram(waveform, **kwargs)
+    intensity = _intensity(hist, scale)
+    ax.imshow(
+        intensity, origin="lower", extent=extent, aspect="auto", cmap=cmap,
+        interpolation="nearest",
+    )
+    if xlabel is None:
+        xlabel = "X" if kwargs.get("x") is not None else "Time (s)"
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     return ax

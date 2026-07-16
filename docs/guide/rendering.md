@@ -27,33 +27,54 @@ wm.render(wave, width=1000, height=500, cmap="inferno", path="scope.png")
 `render` always draws the **whole** waveform you give it — to render a slice,
 pass one: `wm.render(wave.get_from_to(a, b))`.
 
+## Plotting with axes
+
+`render` returns a bare image. To display it with **data-unit axes** — the same
+time/amplitude axes `plt.plot` produces — use {py:func}`~wave_measure.plot_dpo`,
+which draws the render onto a matplotlib `Axes` and returns it:
+
+```python
+import matplotlib.pyplot as plt
+
+ax = wm.plot_dpo(wave, cmap="inferno")   # x = time, y = amplitude
+plt.show()
+```
+
 ## Examples
 
 These reproduce the demonstrations from Lithcore's
 [Python multi-core / GPU digital phosphor][blog] article, whose CUDA
 implementation this renderer is based on.
 
-### AM signal
+### `wm.render` vs `plt.plot`
 
-A carrier modulated by a slow sine. The carrier fills the modulation envelope,
-and phosphor accumulation glows brightest at the envelope nodes where the trace
-density peaks.
+The same 2-million-sample AM signal, drawn both ways with **identical axes**.
+`plt.plot` overdraws into a solid smear that hides all internal structure;
+`wm.render` grades every pixel by trace density, so the modulation envelope and
+its bright nodes emerge.
 
 ```python
 import numpy as np
+import matplotlib.pyplot as plt
 import wave_measure as wm
 
-fs, n = 1e6, 8_000_000
+fs, n = 1e6, 2_000_000
 t = np.arange(n) / fs
-carrier, modulation = 1000.0, 1.0
-y = np.sin(2 * np.pi * carrier * t) * (0.5 + 0.5 * np.sin(2 * np.pi * modulation * t))
+y = np.sin(2 * np.pi * 1000 * t) * (0.5 + 0.5 * np.sin(2 * np.pi * 2.0 * t))
+wave = wm.from_array(y.astype(np.float32), sample_rate=fs)
 
-am = wm.from_array(y.astype(np.float32), sample_rate=fs)
-wm.render(am, width=1100, height=440, cmap="inferno", path="am.png")
+fig, (left, right) = plt.subplots(1, 2, figsize=(12, 4.2), constrained_layout=True)
+left.plot(t, y, lw=0.4)
+left.set(title="plt.plot()", xlabel="Time (s)", ylabel="Amplitude")
+
+wm.plot_dpo(wave, ax=right, cmap="inferno")
+right.set_title("wm.render()")
+right.set_xlim(left.get_xlim())        # match plt.plot's axes exactly
+right.set_ylim(left.get_ylim())
 ```
 
-```{image} ../_static/dpo_am_signal.png
-:alt: Digital-phosphor render of an amplitude-modulated signal
+```{image} ../_static/dpo_vs_plot.png
+:alt: plt.plot and wm.render of an AM signal, side by side with identical axes
 :width: 100%
 ```
 
@@ -70,11 +91,11 @@ x = np.cumsum(rng.standard_normal(8_000_000)).astype(np.float32)
 y = np.cumsum(rng.standard_normal(8_000_000)).astype(np.float32)
 
 walk = wm.from_array(y)
-wm.render(walk, x=x, width=680, height=680, cmap="magma", path="walk.png")
+ax = wm.plot_dpo(walk, x=x, width=680, height=680, cmap="magma", ylabel="Y")
 ```
 
 ```{image} ../_static/dpo_random_walk.png
-:alt: Digital-phosphor render of a 2-D random walk
+:alt: Digital-phosphor render of a 2-D random walk with X-Y axes
 :width: 70%
 :align: center
 ```
@@ -101,8 +122,9 @@ upward): an `(height, width)` float array in `[0, 1]` without `cmap`, or an
 
 ## Data-unit axes
 
-`render` returns a raster with no axes. For labeled axes, use the lower-level
-{py:func}`~wave_measure.dpo_histogram`, which returns the raw counts and extent:
+{py:func}`~wave_measure.plot_dpo` (above) is the easy way to get labeled axes.
+Under the hood it uses {py:func}`~wave_measure.dpo_histogram`, which returns the
+raw counts and extent if you want full control:
 
 ```python
 hist, extent = wm.dpo_histogram(wave, width=1000, height=500)
