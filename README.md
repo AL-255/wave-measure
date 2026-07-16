@@ -166,19 +166,21 @@ import wave_measure as wm
 
 wave = wm.read_raw("capture.bin", dtype="int16", sample_rate=10e6)
 
-img = wm.render(wave, width=1000, height=500)   # RGBA uint8 image
-plt.imshow(img)                                  # display
-plt.imsave("scope.png", img)                     # ...or save
-# or save directly:
-wm.render(wave, width=1000, height=500, path="scope.png")
+img = wm.render(wave, width=1000, height=500)   # 2-D intensity image (uncolored)
+plt.imshow(img, cmap="inferno")                  # colorize at display time
+# or bake the colormap in and save:
+img = wm.render(wave, width=1000, height=500, cmap="inferno")   # RGBA uint8
+plt.imsave("scope.png", img)
 ```
 
 `render` always draws the **whole** waveform you give it — to render a slice,
-pass one: `wm.render(wave.get_from_to(a, b))`. Key options: `cmap` (any
-matplotlib colormap, default `"inferno"`), `scale` (`"sqrt"`/`"log"`/`"linear"`
-intensity compression), `x_range`/`y_range`, `backend` (`"cuda"`/`"cpu"`/auto),
-and `workers`. The backend defaults to the detected accelerator; an unusable
-CUDA request falls back to CPU with a warning.
+pass one: `wm.render(wave.get_from_to(a, b))`. Pass `x=` (a second channel or
+array) for X-Y mode — a Lissajous figure or 2-D random walk. Key options: `cmap`
+(omit for a raw intensity image, or pass any matplotlib colormap to bake in
+RGBA), `scale` (`"sqrt"`/`"log"`/`"linear"` intensity compression),
+`x_range`/`y_range`, `backend` (`"cuda"`/`"cpu"`/auto), and `workers`. The
+backend defaults to the detected accelerator; an unusable CUDA request falls
+back to CPU with a warning.
 
 For axes in data units, use the lower-level `wm.dpo_histogram`, which returns the
 raw `(counts, extent)`:

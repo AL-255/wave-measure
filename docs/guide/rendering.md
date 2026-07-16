@@ -13,11 +13,15 @@ import wave_measure as wm
 
 wave = wm.read_raw("capture.bin", dtype="int16", sample_rate=10e6)
 
-img = wm.render(wave, width=1000, height=500)   # RGBA uint8 image
-plt.imshow(img)                                  # display
-plt.imsave("scope.png", img)                     # ...or save
-# or save directly:
-wm.render(wave, width=1000, height=500, path="scope.png")
+# By default render returns an uncolored 2-D intensity image; choose a colormap
+# at display time.
+img = wm.render(wave, width=1000, height=500)
+plt.imshow(img, cmap="inferno")
+
+# Or pass cmap to bake the colors in and save an RGBA image directly.
+img = wm.render(wave, width=1000, height=500, cmap="inferno")
+plt.imsave("scope.png", img)
+wm.render(wave, width=1000, height=500, cmap="inferno", path="scope.png")
 ```
 
 `render` always draws the **whole** waveform you give it — to render a slice,
@@ -53,36 +57,47 @@ wm.render(am, width=1100, height=440, cmap="inferno", path="am.png")
 :width: 100%
 ```
 
-### Random walk
+### 2-D random walk
 
-A 30-million-sample Brownian walk. Because the trace is single-valued in time,
-the glow comes from the many samples that fall in each pixel column — brightest
-where the walk lingers or reverses.
+Both axes are Brownian walks. Passing `x=` renders in **X-Y mode** — the y
+waveform is plotted against a second channel (here another walk) instead of
+against time. The phosphor accumulation reveals the fractal structure, glowing
+where the walk revisits a region.
 
 ```python
-walk = np.cumsum(np.random.default_rng(1).standard_normal(30_000_000))
-rw = wm.from_array(walk.astype(np.float32), sample_rate=1.0)
-wm.render(rw, width=1100, height=440, cmap="magma", path="walk.png")
+rng = np.random.default_rng(7)
+x = np.cumsum(rng.standard_normal(8_000_000)).astype(np.float32)
+y = np.cumsum(rng.standard_normal(8_000_000)).astype(np.float32)
+
+walk = wm.from_array(y)
+wm.render(walk, x=x, width=680, height=680, cmap="magma", path="walk.png")
 ```
 
 ```{image} ../_static/dpo_random_walk.png
-:alt: Digital-phosphor render of a random walk
-:width: 100%
+:alt: Digital-phosphor render of a 2-D random walk
+:width: 70%
+:align: center
 ```
 
 [blog]: https://www.lithcore.net/2025/02/python-multi-core-gpu-digital-phosphor.html
 
 ## Options
 
+- `x` — a second channel (`Waveform` or array) for X-Y mode; defaults to time.
 - `width`, `height` — output image size in pixels.
-- `cmap` — any matplotlib colormap (default `"inferno"` for a phosphor look).
+- `cmap` — a matplotlib colormap (name or object). Omit it to get the raw
+  intensity image and colorize yourself with `plt.imshow(img, cmap=...)`; pass
+  it to bake an RGBA image.
 - `scale` — intensity compression: `"sqrt"` (default), `"log"`, or `"linear"`.
-- `x_range`, `y_range` — data bounds to map; default to the full time span and
-  the (streamed) amplitude min/max.
+- `x_range`, `y_range` — data bounds to map; default to the full x/y span.
 - `backend` — `"cuda"`, `"cpu"`, or auto from the detected accelerator. An
   unusable CUDA request falls back to CPU with a warning.
 - `workers` — CPU worker count (defaults to all cores).
 - `path` — if given, also save the image.
+
+The return value is oriented for a plain `plt.imshow(img)` (amplitude increases
+upward): an `(height, width)` float array in `[0, 1]` without `cmap`, or an
+`(height, width, 4)` `uint8` RGBA image with it.
 
 ## Data-unit axes
 

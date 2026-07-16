@@ -19,7 +19,7 @@ chunk = processed.get_from_to(10_000, 20_000)   # random access
 print(wm.vpp(chunk), wm.frequency(chunk))
 
 # Render the whole capture as a digital-phosphor image.
-img = wm.render(wave, width=1000, height=500)
+img = wm.render(wave, width=1000, height=500, cmap="inferno")
 ```
 
 ## Highlights

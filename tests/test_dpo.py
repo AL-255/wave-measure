@@ -51,23 +51,30 @@ def test_histogram_is_connected_trace(signal):
     assert hist.sum() >= len(signal) - 1
 
 
-def test_render_returns_rgba_image(signal):
+def test_render_uncolored_by_default(signal):
+    # No cmap -> a 2-D intensity image in [0, 1], ready for plt.imshow(img, cmap=...).
     img = wm.render(signal, width=320, height=240)
+    assert img.shape == (240, 320)
+    assert img.dtype == np.float64
+    assert img.min() >= 0.0 and img.max() <= 1.0
+
+
+def test_render_cmap_returns_rgba(signal):
+    img = wm.render(signal, width=320, height=240, cmap="inferno")
     assert img.shape == (240, 320, 4)
     assert img.dtype == np.uint8
 
 
-def test_render_scales_and_cmaps(signal):
-    # Different intensity scales should generally produce different images.
-    a = wm.render(signal, width=128, height=96, scale="sqrt", cmap="viridis")
-    b = wm.render(signal, width=128, height=96, scale="log", cmap="viridis")
+def test_render_scales_differ(signal):
+    a = wm.render(signal, width=128, height=96, scale="sqrt")
+    b = wm.render(signal, width=128, height=96, scale="log")
     assert a.shape == b.shape
     assert not np.array_equal(a, b)
 
 
 def test_render_saves_to_path(signal, tmp_path):
     out = tmp_path / "dpo.png"
-    img = wm.render(signal, width=160, height=120, path=str(out))
+    img = wm.render(signal, width=160, height=120, cmap="magma", path=str(out))
     assert out.exists() and out.stat().st_size > 0
     assert img.shape == (120, 160, 4)
 
@@ -75,7 +82,27 @@ def test_render_saves_to_path(signal, tmp_path):
 def test_render_on_streamed_waveform(signal):
     # A lazy pipeline renders the same way (it's just another Waveform).
     img = wm.render(signal.amplitude.abs(), width=100, height=80)
-    assert img.shape == (80, 100, 4)
+    assert img.shape == (80, 100)
+
+
+def test_xy_mode_renders_second_channel():
+    # A diagonal in X-Y mode: y == x should light up the histogram diagonal only.
+    n = 5000
+    ramp = np.linspace(0.0, 1.0, n)
+    ywave = wm.from_array(ramp, sample_rate=1.0)
+    hist, extent = wm.dpo_histogram(
+        ywave, x=ramp, width=64, height=64, x_range=(0, 1), y_range=(0, 1), workers=1
+    )
+    # On the diagonal every pixel (i, i) is hit; off-diagonal stays empty-ish.
+    diag = np.diag(hist)
+    assert np.count_nonzero(diag) >= 60  # nearly the full diagonal
+    off = hist.sum() - diag.sum()
+    assert off <= hist.sum() * 0.1  # energy concentrated on the diagonal
+
+
+def test_xy_length_mismatch_raises(signal):
+    with pytest.raises(ValueError):
+        wm.dpo_histogram(signal, x=np.zeros(len(signal) - 1))
 
 
 def test_cuda_backend_falls_back_when_unavailable(signal):

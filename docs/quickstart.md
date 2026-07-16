@@ -48,9 +48,9 @@ top = wave.amplitude.top()
 ```python
 import matplotlib.pyplot as plt
 
-img = wm.render(wave, width=1000, height=500)  # digital-phosphor RGBA image
-plt.imshow(img)
-plt.imsave("scope.png", img)
+img = wm.render(wave, width=1000, height=500)  # 2-D intensity image
+plt.imshow(img, cmap="inferno")                # colorize at display time
+plt.imsave("scope.png", wm.render(wave, cmap="inferno"))
 ```
 
 See {doc}`guide/rendering`.
