@@ -69,9 +69,11 @@ class AcceleratorInfo:
 
     @property
     def is_gpu(self) -> bool:
+        """True when the selected backend runs on a GPU."""
         return self.backend == "cuda"
 
     def summary(self) -> str:
+        """A one-line human-readable summary of the detected accelerator."""
         parts = [f"backend={self.backend}", self.hardware]
         if self.simd_features:
             parts.append("SIMD=" + ",".join(self.simd_features))

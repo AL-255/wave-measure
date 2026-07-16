@@ -95,9 +95,11 @@ class MathCategory(_Bound):
         return self._wave._derive(DiffOp())
 
     def square(self):
+        """Square each sample."""
         return self._wave._derive(SquareOp())
 
     def sqrt(self):
+        """Square root of each sample."""
         return self._wave._derive(SqrtOp())
 
     def log(self, base=None):
@@ -115,40 +117,55 @@ class AmplitudeCategory(_Bound):
 
     # -- length-preserving --
     def abs(self):
+        """Absolute value, sample by sample."""
         return self._wave._derive(AbsOp())
 
     def clip(self, lo, hi):
+        """Clamp samples to the range ``[lo, hi]``."""
         return self._wave._derive(ClipOp(lo, hi))
 
     def gain(self, gain):
+        """Multiply samples by ``gain``."""
         return self._wave._derive(AffineOp(gain=gain))
 
     def offset(self, offset):
+        """Add a constant ``offset`` to every sample."""
         return self._wave._derive(AffineOp(offset=offset))
 
     # -- terminal reductions --
     def histogram(self, bins=256, value_range=None, *, block=1 << 20):
+        """Amplitude histogram over the whole stream (returns a
+        :class:`~wave_measure.reductions.Histogram`)."""
         return stream_histogram(self._wave, bins=bins, value_range=value_range, block=block)
 
     def stats(self, *, block=1 << 20):
+        """Single-pass count/min/max/mean/rms/std (a
+        :class:`~wave_measure.reductions.Stats`)."""
         return stream_stats(self._wave, block=block)
 
     def min(self, *, block=1 << 20):
+        """Minimum sample value (streamed)."""
         return self.stats(block=block).min
 
     def max(self, *, block=1 << 20):
+        """Maximum sample value (streamed)."""
         return self.stats(block=block).max
 
     def mean(self, *, block=1 << 20):
+        """Mean (DC) level (streamed)."""
         return self.stats(block=block).mean
 
     def rms(self, *, block=1 << 20):
+        """Root-mean-square amplitude (streamed)."""
         return self.stats(block=block).rms
 
     def peak_to_peak(self, *, block=1 << 20):
+        """Peak-to-peak amplitude, ``max - min`` (streamed)."""
         return self.stats(block=block).peak_to_peak
 
     def peaks(self, *, height=None, distance=1, block=1 << 20):
+        """Find peaks across the whole stream (returns
+        :class:`~wave_measure.reductions.Peaks`)."""
         return stream_peaks(self._wave, height=height, distance=distance, block=block)
 
     def levels(self, bins=256, value_range=None, *, block=1 << 20):

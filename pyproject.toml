@@ -29,6 +29,7 @@ render = ["matplotlib>=3.5"]
 analysis = ["scipy>=1.7"]
 all = ["matplotlib>=3.5", "scipy>=1.7"]
 dev = ["pytest>=7.0", "matplotlib>=3.5", "scipy>=1.7"]
+docs = ["sphinx>=7.0", "furo>=2024.1", "myst-parser>=2.0", "matplotlib>=3.5"]
 
 [project.urls]
 Homepage = "https://github.com/AL-255/wave-measure"

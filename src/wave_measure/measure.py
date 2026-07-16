@@ -39,10 +39,12 @@ def vpp(waveform: Waveform) -> float:
 
 
 def vmax(waveform: Waveform) -> float:
+    """Maximum sample value."""
     return float(_values(waveform).max())
 
 
 def vmin(waveform: Waveform) -> float:
+    """Minimum sample value."""
     return float(_values(waveform).min())
 
 

@@ -37,6 +37,7 @@ class Stats:
 
     @property
     def peak_to_peak(self) -> float:
+        """Peak-to-peak amplitude, ``max - min``."""
         return self.max - self.min
 
     def __repr__(self) -> str:
@@ -79,10 +80,12 @@ class Histogram:
 
     @property
     def centers(self) -> np.ndarray:
+        """Bin centers (one per count)."""
         return 0.5 * (self.edges[:-1] + self.edges[1:])
 
     @property
     def total(self) -> int:
+        """Total number of samples counted."""
         return int(self.counts.sum())
 
     def __repr__(self) -> str:
@@ -214,6 +217,7 @@ class Levels:
 
     @property
     def amplitude(self) -> float:
+        """Level separation, ``top - bottom``."""
         return self.top - self.bottom
 
     def __repr__(self) -> str:

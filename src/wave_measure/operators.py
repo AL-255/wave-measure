@@ -59,6 +59,7 @@ class Operator(ABC):
 
     @property
     def name(self) -> str:
+        """The operator's class name (used in ``repr`` and pipeline labels)."""
         return type(self).__name__
 
     def __repr__(self) -> str:
@@ -69,6 +70,8 @@ class Operator(ABC):
 
 
 class AbsOp(Operator):
+    """Absolute value of each sample."""
+
     def apply(self, window: np.ndarray) -> np.ndarray:
         return np.abs(window)
 
@@ -88,6 +91,8 @@ class AffineOp(Operator):
 
 
 class ClipOp(Operator):
+    """Clamp each sample to ``[lo, hi]``."""
+
     def __init__(self, lo: float, hi: float) -> None:
         self.lo, self.hi = float(lo), float(hi)
 
@@ -114,16 +119,22 @@ class DiffOp(Operator):
 
 
 class SquareOp(Operator):
+    """Square each sample."""
+
     def apply(self, window: np.ndarray) -> np.ndarray:
         return window * window
 
 
 class SqrtOp(Operator):
+    """Square root of each sample."""
+
     def apply(self, window: np.ndarray) -> np.ndarray:
         return np.sqrt(window)
 
 
 class LogOp(Operator):
+    """Logarithm of each sample (natural, or base ``base``)."""
+
     def __init__(self, base: float = None) -> None:
         self.base = base
 
@@ -164,7 +175,9 @@ def moving_average_op(window: int) -> FirOp:
     return FirOp(np.full(window, 1.0 / window))
 
 
-class MovingAverageOp(FirOp):  # alias kept for discoverability
+class MovingAverageOp(FirOp):
+    """Causal running-mean (box-car) filter of length ``window``."""
+
     def __init__(self, window: int) -> None:
         w = int(window)
         if w < 1:

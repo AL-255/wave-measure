@@ -74,18 +74,22 @@ class Waveform:
 
     @property
     def source(self) -> Source:
+        """The :class:`~wave_measure.sources.Source` at the root of the pipeline."""
         return self._source
 
     @property
     def ops(self) -> Tuple[Operator, ...]:
+        """The chain of operators applied to the source, in order."""
         return self._ops
 
     @property
     def sample_rate(self) -> float:
+        """Sampling rate in hertz."""
         return self._source.sample_rate
 
     @property
     def dt(self) -> float:
+        """Sample interval in seconds (``1 / sample_rate``)."""
         return 1.0 / self.sample_rate if self.sample_rate else 0.0
 
     def __len__(self) -> int:  # length-preserving pipeline
@@ -93,6 +97,7 @@ class Waveform:
 
     @property
     def duration(self) -> float:
+        """Total span of the time base in seconds."""
         n = len(self)
         return (n - 1) / self.sample_rate if n >= 2 and self.sample_rate else 0.0
 
@@ -170,10 +175,12 @@ class Waveform:
 
     @property
     def samples(self) -> np.ndarray:
+        """The pipeline output as a single array (materializes; see :meth:`to_array`)."""
         return self.to_array()
 
     @property
     def time(self) -> np.ndarray:
+        """The full time base as an array (materializes for streaming waveforms)."""
         if not self._ops and isinstance(self._source, ArraySource):
             return self._source.time(0, len(self))
         if len(self) > _MATERIALIZE_LIMIT:
@@ -251,6 +258,7 @@ class Waveform:
         )
 
     def with_metadata(self, **kwargs: Any) -> "Waveform":
+        """Return a copy with additional metadata merged in."""
         return Waveform(
             source=self._source,
             ops=self._ops,

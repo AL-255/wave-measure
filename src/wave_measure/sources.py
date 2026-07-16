@@ -39,6 +39,7 @@ class Source(ABC):
         """Return samples ``[start, stop)`` as ``float64`` (clamped to bounds)."""
 
     def time(self, start: int, stop: int) -> np.ndarray:
+        """Timestamps (seconds) for samples ``[start, stop)``."""
         start, stop = self._clamp(start, stop)
         idx = np.arange(start, stop, dtype=np.float64)
         return self.t0 + idx / self.sample_rate
@@ -82,10 +83,12 @@ class ArraySource(Source):
         return int(self._samples.size)
 
     def read(self, start: int, stop: int) -> np.ndarray:
+        """Return samples ``[start, stop)`` as ``float64``."""
         start, stop = self._clamp(start, stop)
         return self._samples[start:stop]
 
     def time(self, start: int, stop: int) -> np.ndarray:
+        """Timestamps for ``[start, stop)`` (explicit if given, else uniform)."""
         if self._time is not None:
             start, stop = self._clamp(start, stop)
             return self._time[start:stop]
@@ -93,6 +96,7 @@ class ArraySource(Source):
 
     @property
     def array(self) -> np.ndarray:
+        """The underlying sample array."""
         return self._samples
 
 
@@ -159,6 +163,7 @@ class RawBinaryReader(Source):
         return self._count
 
     def read(self, start: int, stop: int) -> np.ndarray:
+        """Return calibrated samples ``[start, stop)`` as ``float64``."""
         start, stop = self._clamp(start, stop)
         raw = np.asarray(self._mmap[start:stop], dtype=np.float64)
         if self.gain != 1.0 or self.offset != 0.0:
